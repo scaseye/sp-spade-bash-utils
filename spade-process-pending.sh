@@ -14,35 +14,8 @@ else
 fi
 set -eu
 set -o pipefail
-
 miner=$1
-MAXPC1=32
-SLEEPJOBCHECK=15
-SEALINGJOBSTYPES="PC1\|RU\|GET\|FRU\|AP"
-
-check_mpool() {
-    mps=$(lotus mpool pending --local | wc -l)
-    echo checking mpool for msgs, found "$mps"
-    while [ "$mps" -gt 0 ]; do
-        echo "Found msgs in mpool sleep 15 seconds... consider running: lotus mpool replace --auto --fee-limit <amount> <address> <nounce>"
-        sleep 15
-        mps=$(lotus mpool pending --local | wc -l)
-        echo checking mpool for msgs, found "$mps"
-    done
-}
-check_jobs() {
-    PC1s=$(lotus-miner sealing jobs | grep -c "$SEALINGJOBSTYPES")
-    echo "Checking Sealing jobs! Found $PC1s, Max set to $MAXPC1 ."
-    while [ "$PC1s" -gt $MAXPC1 ]; do
-        echo "to many Sealing Jobs to contintue sleeping for $SLEEPJOBCHECK seconds..."
-        sleep $SLEEPJOBCHECK
-        PC1s=$(lotus-miner sealing jobs | grep -c "$SEALINGJOBSTYPES")
-        echo "Checking RU jobs! Found $PC1s, Max set to $MAXPC1."
-    done
-}
-
 pending_response=$(echo curl -sLH \"Authorization: $(./fil-spid.bash "$miner")\" https://api.spade.storage/sp/pending_proposals | sh)
-
 # get response code from JSON output
 pending_response_code=$(echo "$pending_response" | jq -r '.response_code')
 pending_proposals=$(echo "$pending_response" | jq -r '.response.pending_proposals')
@@ -51,7 +24,6 @@ echo "$pending_response"
 echo "API response code found: $pending_response_code"
 echo "API pending proposals found: $pending_proposals"
 echo "Pending Proposals count :$pending_count"
-
 # if response code is 200
 if [ "$pending_response_code" -eq 200 ]; then
     for ((i = 0; i < $pending_count; i++)); do
