@@ -36,7 +36,6 @@ if [ "$response_code" -eq 200 ]; then
 		echo "Sleeping 5 seconds..."
 		sleep 5
 	done
-
 else
 	echo "Error: response code $response_code"
 fi
