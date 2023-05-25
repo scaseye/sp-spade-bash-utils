@@ -29,8 +29,8 @@ basefeeLimit=1000000000
 #
 #------------------------------------------------
 replacePublishMsgIfNeeded() {
-    publishPendingMsgGasFeeCap=$(lotus mpool pending --local | grep "$publishAddress" -A5 | grep GasFeeCap | awk '{print $2'} | awk '{print substr($0, 2, length($0) - 3)}')
-    publishPendingMsgNonce=$(lotus mpool pending --local | grep "$publishAddress" -A5 | grep Nonce | awk '{print $2'} | awk '{ print substr( $0, 1, length($0)-1 ) }')
+    publishPendingMsgGasFeeCap=$(lotus mpool pending --local | grep "$publishAddress" -A5 | grep GasFeeCap | awk '{print $2'} | awk '{print substr($0, 2, length($0) - 3)}'  | head -n1)
+    publishPendingMsgNonce=$(lotus mpool pending --local | grep "$publishAddress" -A5 | grep Nonce | awk '{print $2'} | awk '{ print substr( $0, 1, length($0)-1 ) }'  | head -n1)
     basefee=$(lotus chain head | awk 'NR==1{print; exit}' | xargs lotus chain getblock | jq -r .ParentBaseFee)
     echo The basefee is: "$basefee"
     echo The GasFeeCap is: "$publishPendingMsgGasFeeCap"
@@ -38,7 +38,7 @@ replacePublishMsgIfNeeded() {
         echo GasFeeCap is too low
         if [ "$(("$basefee"))" -le "$basefeeLimit" ]; then
             echo "lotus mpool replace --auto --fee-limit 0.${basefee:0:1} $publishAddress $publishPendingMsgNonce"
-            lotus mpool replace --auto --fee-limit 0."${basefee:0:1} $publishAddress $publishPendingMsgNonce"
+	        replaceMsg=$(lotus mpool replace --auto --fee-limit 0."${basefee:0:1}" "$publishAddress" "$publishPendingMsgNonce")
             echo sleep 5 mins
             sleep 300
         fi
@@ -52,7 +52,7 @@ check_mpool() {
         echo "Found publish msgs in mpool sleep 5 seconds... "
         sleep 5
         replacePublishMsgIfNeeded
-        mps=$(lotus mpool pending --local | wc -l)
+    	mps=$(lotus mpool pending --local | grep -c "$publishAddress")
         echo checking mpool for msgs, found "$mps"
     done
 }

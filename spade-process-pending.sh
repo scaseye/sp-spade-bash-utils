@@ -26,7 +26,7 @@ echo "API pending proposals found: $pending_proposals"
 echo "Pending Proposals count :$pending_count"
 # if response code is 200
 if [ "$pending_response_code" -eq 200 ]; then
-    for ((i = 0; i < $pending_count; i++)); do
+    for ((i = 0; i < "$pending_count"; i++)); do
         #check_mpool
         #check_jobs
         echo "Processing entry: $i"

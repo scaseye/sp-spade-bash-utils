@@ -16,7 +16,7 @@ else
     echo "$2 is not a valid path"
     exit 1
 fi
-#handle errors and ^c
+#handle errors 
 set -eu
 set -o pipefail
 #------------------------------------------------
@@ -28,21 +28,24 @@ maxLotusSealingJobs=32
 currentLotusJobs=0
 SLEEPJOBCHECK=15
 SEALINGJOBSTYPES="PC1\|RU\|GET\|FRU\|AP"
-sealingJobCount="lotus-miner sealing jobs | grep -c $SEALINGJOBSTYPES"
-# Number of concurrent downloads
 concurrent_downloads=5
 downloads=()
+# future account for piece sizes
+# set max for this run to 1TiB
+#maxLotusSealingBytes=1000000000000
+#currentSealingBytes=0
 #------------------------------------------------
 # functions
 #
 #------------------------------------------------
 countLotusJobs() {
-    currentLotusJobs=$("$sealingJobCount")
+    echo Checking these Lotus Job Types: "$SEALINGJOBSTYPES"
+    currentLotusJobs=$(lotus-miner sealing jobs | grep -c "$SEALINGJOBSTYPES")
     echo "Counting Sealing jobs! Found $currentLotusJobs, Max set to $maxLotusSealingJobs ."
     while [ "$currentLotusJobs" -gt $maxLotusSealingJobs ]; do
         echo "to many Sealing Jobs to contintue... sleeping for $SLEEPJOBCHECK seconds..."
         sleep $SLEEPJOBCHECK
-        currentLotusJobs=$("$sealingJobCount")
+        currentLotusJobs=$(lotus-miner sealing jobs | grep -c "$SEALINGJOBSTYPES")
         echo "Counting $SEALINGJOBSTYPES jobs! Found $currentLotusJobs, Max set to $maxLotusSealingJobs."
     done
 }
@@ -67,19 +70,20 @@ echo "Pending Proposals count :$pending_count"
 # if response code is 200 build array of download and imports. 
 if [ "$pending_response_code" -eq 200 ]; then
     for ((i = 0; i < "$pending_count"; i++)); do
-        countLotusJobs
+        #countLotusJobs
         echo "Processing entry: $i"
         dl=$(echo "$pending_response" | jq -r --argjson idx "$i" '.response.pending_proposals[$idx].data_sources[0]')
         deal_proposal_cid=$(echo "$pending_response" | jq -r --argjson idx "$i" '.response.pending_proposals[$idx].deal_proposal_cid')
         piece_cid=$(echo "$pending_response" | jq -r --argjson idx "$i" '.response.pending_proposals[$idx].piece_cid')
+        piece_size=$(echo "$pending_response" | jq -r --argjson idx "$i" '.response.pending_proposals[$idx].piece_size')
         f=$(basename -- "$dl")
         echo "found Deal: $deal_proposal_cid"
         echo "found Download URL: $dl"
         echo "found Piece CID: $piece_cid"
+        echo "found Piece size: $piece_size"
         echo "found carfile: $f"
         if [ -e "$downloadDirectory/""$f".aria2 ]; then
             echo "Parital File exist resume download it..."
-            #downloads+=("aria2c -d "$downloadDirectory" "$dl" --auto-file-renaming=false && boostd import-data "$deal_proposal_cid" "$downloadDirectory/""$f"")
             downloads+=("aria2c -d $downloadDirectory $dl -x5 --auto-file-renaming=false && boostd import-data $deal_proposal_cid $downloadDirectory/$f")
             # echo "boostd import-data "$deal_proposal_cid" "$downloadDirectory/""$f""
         elif [ -e "$downloadDirectory/""$f" ]; then
@@ -90,12 +94,13 @@ if [ "$pending_response_code" -eq 200 ]; then
             downloads+=("aria2c -d $downloadDirectory $dl -x5 --auto-file-renaming=false && boostd import-data $deal_proposal_cid $downloadDirectory/$f")
         fi
     done
-    echo Beginning download and import, concurrency set to $concurrent_downloads
+    echo Begin download and boostd import, concurrency set to $concurrent_downloads
     for i in "${downloads[@]}"; do
         while [ "$(jobs -p | wc -l)" -ge "$concurrent_downloads" ]; do
             # Wait for any background job to finish
             wait -n
         done
+	countLotusJobs
         # Execute the command in the background
         download_and_run_command "$i" &
     done
