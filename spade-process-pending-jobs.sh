@@ -100,7 +100,7 @@ if [ "$pending_response_code" -eq 200 ]; then
             # Wait for any background job to finish
             wait -n
         done
-	countLotusJobs
+	#countLotusJobs
         # Execute the command in the background
         download_and_run_command "$i" &
     done
