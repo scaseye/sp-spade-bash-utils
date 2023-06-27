@@ -40,12 +40,12 @@ downloads=()
 #------------------------------------------------
 countLotusJobs() {
     echo Checking these Lotus Job Types: "$SEALINGJOBSTYPES"
-    currentLotusJobs=$(lotus-miner sealing jobs | grep -c "$SEALINGJOBSTYPES")
+    currentLotusJobs=$(lotus-miner sealing jobs | grep -o "$SEALINGJOBSTYPES" | wc -l)
     echo "Counting Sealing jobs! Found $currentLotusJobs, Max set to $maxLotusSealingJobs ."
     while [ "$currentLotusJobs" -gt $maxLotusSealingJobs ]; do
         echo "to many Sealing Jobs to contintue... sleeping for $SLEEPJOBCHECK seconds..."
         sleep $SLEEPJOBCHECK
-        currentLotusJobs=$(lotus-miner sealing jobs | grep -c "$SEALINGJOBSTYPES")
+        currentLotusJobs=$(lotus-miner sealing jobs | grep -o "$SEALINGJOBSTYPES" | wc -l)
         echo "Counting $SEALINGJOBSTYPES jobs! Found $currentLotusJobs, Max set to $maxLotusSealingJobs."
     done
 }
