@@ -46,13 +46,13 @@ replacePublishMsgIfNeeded() {
     fi
 }
 check_mpool() {
-    mps=$(lotus mpool pending --local | grep -c "$publishAddress")
+    mps=$(lotus mpool pending --local | grep -o "$publishAddress" | wc -l)
     #echo checking mpool for msgs, found "$mps"
     while [ "$mps" -gt 0 ]; do
         echo "Found publish msgs in mpool sleep 5 seconds... "
         sleep 5
         replacePublishMsgIfNeeded
-    	mps=$(lotus mpool pending --local | grep -c "$publishAddress")
+    	mps=$(lotus mpool pending --local | grep -o "$publishAddress" | wc -l)
         echo checking mpool for msgs, found "$mps"
     done
 }

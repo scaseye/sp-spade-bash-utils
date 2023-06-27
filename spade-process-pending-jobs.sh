@@ -70,7 +70,6 @@ echo "Pending Proposals count :$pending_count"
 # if response code is 200 build array of download and imports. 
 if [ "$pending_response_code" -eq 200 ]; then
     for ((i = 0; i < "$pending_count"; i++)); do
-        #countLotusJobs
         echo "Processing entry: $i"
         dl=$(echo "$pending_response" | jq -r --argjson idx "$i" '.response.pending_proposals[$idx].data_sources[0]')
         deal_proposal_cid=$(echo "$pending_response" | jq -r --argjson idx "$i" '.response.pending_proposals[$idx].deal_proposal_cid')
